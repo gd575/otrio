@@ -1,0 +1,1206 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="オートリオ">
+<title>オートリオ AI練習</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    background: #f4f1ea;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                 "Yu Gothic", sans-serif;
+    color: #222;
+    user-select: none;
+    overflow-x: hidden;
+}
+
+#app {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 12px;
+}
+
+h1 {
+    text-align: center;
+    margin: 5px 0;
+    font-size: 25px;
+}
+
+#status {
+    text-align: center;
+    min-height: 45px;
+    font-weight: bold;
+    font-size: 15px;
+    padding: 8px;
+}
+
+.game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: min(94vw, 510px);
+    aspect-ratio: 1 / 1;
+    background: #d8b98a;
+    border: 4px solid #7d5a35;
+    padding: 4px;
+    gap: 3px;
+}
+
+.cell {
+    position: relative;
+    background: #f8ecd6;
+    border: 2px solid #b68b5c;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.piece {
+    position: absolute;
+    border-radius: 50%;
+    border: 6px solid;
+    pointer-events: none;
+}
+
+.piece.S {
+    width: 32%;
+    height: 32%;
+}
+
+.piece.M {
+    width: 57%;
+    height: 57%;
+}
+
+.piece.L {
+    width: 82%;
+    height: 82%;
+}
+
+.red {
+    border-color: #e53935;
+}
+
+.purple {
+    border-color: #8e44ad;
+}
+
+.blue {
+    border-color: #1e88e5;
+}
+
+.green {
+    border-color: #43a047;
+}
+
+#palette-title {
+    margin-top: 14px;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+#palette {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 10px 0;
+}
+
+.piece-button {
+    width: 85px;
+    height: 85px;
+    background: #fffdf8;
+    border: 2px solid #aaa;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    touch-action: manipulation;
+}
+
+.piece-button .ring {
+    border: 6px solid;
+    border-radius: 50%;
+}
+
+.piece-button.S .ring {
+    width: 25px;
+    height: 25px;
+}
+
+.piece-button.M .ring {
+    width: 42px;
+    height: 42px;
+}
+
+.piece-button.L .ring {
+    width: 60px;
+    height: 60px;
+}
+
+.piece-button.disabled {
+    opacity: 0.3;
+}
+
+.piece-button.selected {
+    outline: 4px solid #333;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+button,
+select {
+    font-size: 16px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1px solid #aaa;
+    background: white;
+}
+
+#new-game {
+    font-weight: bold;
+}
+
+#ai-info {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #555;
+}
+
+@media (max-width: 450px) {
+    #app {
+        padding: 6px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    #status {
+        font-size: 14px;
+    }
+
+    .piece-button {
+        width: 75px;
+        height: 75px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<h1>オートリオ AI練習</h1>
+
+<div id="status">
+あなたの番：赤の駒を選んでください
+</div>
+
+<div class="game-area">
+
+<div id="board"></div>
+
+<div id="palette-title">
+赤・紫の駒
+</div>
+
+<div id="palette"></div>
+
+<div id="controls">
+
+<label>
+AIの強さ
+<select id="strength">
+<option value="2">普通</option>
+<option value="3" selected>強い</option>
+<option value="4">最強</option>
+</select>
+</label>
+
+<button id="new-game">
+新しいゲーム
+</button>
+
+</div>
+
+<div id="ai-info">
+AI：青・緑
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const SIZES = ["S", "M", "L"];
+
+const HUMAN_COLORS = ["red", "purple"];
+const AI_COLORS = ["blue", "green"];
+
+const COLOR_NAMES = {
+    red: "赤",
+    purple: "紫",
+    blue: "青",
+    green: "緑"
+};
+
+const LINES = [
+    [[0,0],[0,1],[0,2]],
+    [[1,0],[1,1],[1,2]],
+    [[2,0],[2,1],[2,2]],
+    [[0,0],[1,0],[2,0]],
+    [[0,1],[1,1],[2,1]],
+    [[0,2],[1,2],[2,2]],
+    [[0,0],[1,1],[2,2]],
+    [[0,2],[1,1],[2,0]]
+];
+
+let board;
+let remaining;
+let moveCount;
+let selectedSize = null;
+let gameOver = false;
+
+const boardElement = document.getElementById("board");
+const paletteElement = document.getElementById("palette");
+const statusElement = document.getElementById("status");
+const strengthElement = document.getElementById("strength");
+
+function newGame() {
+
+    board = Array.from(
+        {length: 3},
+        () => Array.from(
+            {length: 3},
+            () => []
+        )
+    );
+
+    remaining = {};
+
+    for (const color of [...HUMAN_COLORS, ...AI_COLORS]) {
+
+        remaining[color] = {
+            S: 3,
+            M: 3,
+            L: 3
+        };
+    }
+
+    moveCount = 0;
+    selectedSize = null;
+    gameOver = false;
+
+    statusElement.textContent =
+        "あなたの番：赤の駒を選んでください";
+
+    render();
+}
+
+function currentPlayer() {
+    return moveCount % 2 === 0 ? "H" : "A";
+}
+
+function currentColor() {
+
+    const index =
+        Math.floor(moveCount / 2) % 2;
+
+    if (currentPlayer() === "H") {
+        return HUMAN_COLORS[index];
+    }
+
+    return AI_COLORS[index];
+}
+
+function playerOfColor(color) {
+
+    return HUMAN_COLORS.includes(color)
+        ? "H"
+        : "A";
+}
+
+function canPlace(r, c, color, size) {
+
+    if (remaining[color][size] <= 0) {
+        return false;
+    }
+
+    for (const piece of board[r][c]) {
+
+        if (piece.size === size) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function doMove(r, c, color, size) {
+
+    board[r][c].push({
+        color: color,
+        size: size
+    });
+
+    remaining[color][size]--;
+}
+
+function undoMove(r, c, color, size) {
+
+    board[r][c].pop();
+    remaining[color][size]++;
+}
+
+function hasPiece(r, c, color, size) {
+
+    return board[r][c].some(
+        piece =>
+            piece.color === color &&
+            (size === undefined || piece.size === size)
+    );
+}
+
+function hasOtrio(color) {
+
+    // 同一マスにS・M・L
+    for (let r = 0; r < 3; r++) {
+
+        for (let c = 0; c < 3; c++) {
+
+            const sizes = new Set();
+
+            for (const piece of board[r][c]) {
+
+                if (piece.color === color) {
+                    sizes.add(piece.size);
+                }
+            }
+
+            if (
+                sizes.has("S") &&
+                sizes.has("M") &&
+                sizes.has("L")
+            ) {
+                return true;
+            }
+        }
+    }
+
+    // 3マスのライン
+    for (const line of LINES) {
+
+        for (const size of SIZES) {
+
+            if (
+                line.every(
+                    ([r,c]) =>
+                        hasPiece(r,c,color,size)
+                )
+            ) {
+                return true;
+            }
+        }
+
+        if (
+            hasPiece(...line[0], color, "S") &&
+            hasPiece(...line[1], color, "M") &&
+            hasPiece(...line[2], color, "L")
+        ) {
+            return true;
+        }
+
+        if (
+            hasPiece(...line[0], color, "L") &&
+            hasPiece(...line[1], color, "M") &&
+            hasPiece(...line[2], color, "S")
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function winner() {
+
+    for (
+        const color
+        of [...HUMAN_COLORS, ...AI_COLORS]
+    ) {
+
+        if (hasOtrio(color)) {
+
+            return {
+                player: playerOfColor(color),
+                color: color
+            };
+        }
+    }
+
+    return null;
+}
+
+function legalMoves(player, ply = moveCount) {
+
+    const colors =
+        player === "H"
+            ? HUMAN_COLORS
+            : AI_COLORS;
+
+    const index =
+        Math.floor(ply / 2) % 2;
+
+    const color = colors[index];
+
+    const moves = [];
+
+    for (let r = 0; r < 3; r++) {
+
+        for (let c = 0; c < 3; c++) {
+
+            for (const size of SIZES) {
+
+                if (
+                    canPlace(
+                        r,
+                        c,
+                        color,
+                        size
+                    )
+                ) {
+
+                    moves.push({
+                        r,
+                        c,
+                        color,
+                        size
+                    });
+                }
+            }
+        }
+    }
+
+    return moves;
+}
+
+function evaluate() {
+
+    const win = winner();
+
+    if (win) {
+
+        return win.player === "A"
+            ? 100000
+            : -100000;
+    }
+
+    let score = 0;
+
+    const positions = {
+        "1,1": 8,
+        "0,0": 4,
+        "0,2": 4,
+        "2,0": 4,
+        "2,2": 4
+    };
+
+    for (const key in positions) {
+
+        const [r,c] =
+            key.split(",").map(Number);
+
+        for (const piece of board[r][c]) {
+
+            const value = positions[key];
+
+            score +=
+                playerOfColor(piece.color) === "A"
+                    ? value
+                    : -value;
+        }
+    }
+
+    for (
+        const color
+        of [...HUMAN_COLORS, ...AI_COLORS]
+    ) {
+
+        const sign =
+            playerOfColor(color) === "A"
+                ? 1
+                : -1;
+
+        for (const line of LINES) {
+
+            for (const size of SIZES) {
+
+                const count =
+                    line.filter(
+                        ([r,c]) =>
+                            hasPiece(
+                                r,
+                                c,
+                                color,
+                                size
+                            )
+                    ).length;
+
+                if (count === 2) {
+                    score += sign * 90;
+                }
+
+                if (count === 1) {
+                    score += sign * 12;
+                }
+            }
+
+            for (
+                const order
+                of [
+                    ["S","M","L"],
+                    ["L","M","S"]
+                ]
+            ) {
+
+                let count = 0;
+
+                for (
+                    let i = 0;
+                    i < 3;
+                    i++
+                ) {
+
+                    const [r,c] = line[i];
+
+                    if (
+                        hasPiece(
+                            r,
+                            c,
+                            color,
+                            order[i]
+                        )
+                    ) {
+                        count++;
+                    }
+                }
+
+                if (count === 2) {
+                    score += sign * 120;
+                }
+
+                if (count === 1) {
+                    score += sign * 15;
+                }
+            }
+        }
+
+        for (let r = 0; r < 3; r++) {
+
+            for (let c = 0; c < 3; c++) {
+
+                let count = 0;
+
+                for (const size of SIZES) {
+
+                    if (
+                        hasPiece(
+                            r,
+                            c,
+                            color,
+                            size
+                        )
+                    ) {
+                        count++;
+                    }
+                }
+
+                if (count === 2) {
+                    score += sign * 130;
+                }
+
+                if (count === 1) {
+                    score += sign * 10;
+                }
+            }
+        }
+    }
+
+    return score;
+}
+
+function minimax(
+    depth,
+    alpha,
+    beta,
+    maximizing,
+    ply
+) {
+
+    const win = winner();
+
+    if (win) {
+
+        return win.player === "A"
+            ? 100000 + depth
+            : -100000 - depth;
+    }
+
+    if (depth <= 0) {
+        return evaluate();
+    }
+
+    const player =
+        maximizing ? "A" : "H";
+
+    const moves =
+        legalMoves(player, ply);
+
+    if (moves.length === 0) {
+        return evaluate();
+    }
+
+    shuffle(moves);
+
+    if (maximizing) {
+
+        let value = -Infinity;
+
+        for (const move of moves) {
+
+            doMove(
+                move.r,
+                move.c,
+                move.color,
+                move.size
+            );
+
+            value = Math.max(
+                value,
+                minimax(
+                    depth - 1,
+                    alpha,
+                    beta,
+                    false,
+                    ply + 1
+                )
+            );
+
+            undoMove(
+                move.r,
+                move.c,
+                move.color,
+                move.size
+            );
+
+            alpha = Math.max(
+                alpha,
+                value
+            );
+
+            if (beta <= alpha) {
+                break;
+            }
+        }
+
+        return value;
+
+    } else {
+
+        let value = Infinity;
+
+        for (const move of moves) {
+
+            doMove(
+                move.r,
+                move.c,
+                move.color,
+                move.size
+            );
+
+            value = Math.min(
+                value,
+                minimax(
+                    depth - 1,
+                    alpha,
+                    beta,
+                    true,
+                    ply + 1
+                )
+            );
+
+            undoMove(
+                move.r,
+                move.c,
+                move.color,
+                move.size
+            );
+
+            beta = Math.min(
+                beta,
+                value
+            );
+
+            if (beta <= alpha) {
+                break;
+            }
+        }
+
+        return value;
+    }
+}
+
+function aiChooseMove() {
+
+    const moves = legalMoves("A");
+
+    if (moves.length === 0) {
+        return null;
+    }
+
+    // 即勝ちを優先
+    for (const move of moves) {
+
+        doMove(
+            move.r,
+            move.c,
+            move.color,
+            move.size
+        );
+
+        const won =
+            hasOtrio(move.color);
+
+        undoMove(
+            move.r,
+            move.c,
+            move.color,
+            move.size
+        );
+
+        if (won) {
+            return move;
+        }
+    }
+
+    const depth =
+        Number(strengthElement.value);
+
+    let bestValue = -Infinity;
+    let bestMoves = [];
+
+    for (const move of moves) {
+
+        doMove(
+            move.r,
+            move.c,
+            move.color,
+            move.size
+        );
+
+        const value =
+            minimax(
+                depth - 1,
+                -Infinity,
+                Infinity,
+                false,
+                moveCount + 1
+            );
+
+        undoMove(
+            move.r,
+            move.c,
+            move.color,
+            move.size
+        );
+
+        if (value > bestValue) {
+
+            bestValue = value;
+            bestMoves = [move];
+
+        } else if (value === bestValue) {
+
+            bestMoves.push(move);
+        }
+    }
+
+    return bestMoves[
+        Math.floor(
+            Math.random() * bestMoves.length
+        )
+    ];
+}
+
+function shuffle(array) {
+
+    for (
+        let i = array.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+        [
+            array[i],
+            array[j]
+        ] =
+        [
+            array[j],
+            array[i]
+        ];
+    }
+}
+
+
+// ============================================================
+// 画面表示
+// ============================================================
+
+function render() {
+
+    boardElement.innerHTML = "";
+
+    for (let r = 0; r < 3; r++) {
+
+        for (let c = 0; c < 3; c++) {
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+
+            cell.addEventListener(
+                "click",
+                () => placeSelected(r,c)
+            );
+
+            const pieces =
+                [...board[r][c]]
+                .sort(
+                    (a,b) =>
+                        sizeValue(a.size)
+                        - sizeValue(b.size)
+                );
+
+            for (const piece of pieces) {
+
+                const element =
+                    document.createElement("div");
+
+                element.className =
+                    `piece ${piece.size} ${piece.color}`;
+
+                cell.appendChild(element);
+            }
+
+            boardElement.appendChild(cell);
+        }
+    }
+
+    renderPalette();
+}
+
+function sizeValue(size) {
+
+    return {
+        S: 1,
+        M: 2,
+        L: 3
+    }[size];
+}
+
+function renderPalette() {
+
+    paletteElement.innerHTML = "";
+
+    if (currentPlayer() !== "H") {
+        return;
+    }
+
+    const color = currentColor();
+
+    for (const size of SIZES) {
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            `piece-button ${size}`;
+
+        if (
+            remaining[color][size] <= 0
+        ) {
+            button.classList.add(
+                "disabled"
+            );
+        }
+
+        if (
+            selectedSize === size
+        ) {
+            button.classList.add(
+                "selected"
+            );
+        }
+
+        const ring =
+            document.createElement("div");
+
+        ring.className =
+            `ring ${color}`;
+
+        const text =
+            document.createElement("div");
+
+        text.textContent =
+            `${size} 残り${remaining[color][size]}`;
+
+        button.appendChild(ring);
+        button.appendChild(text);
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    remaining[color][size] <= 0
+                ) {
+                    return;
+                }
+
+                selectedSize =
+                    selectedSize === size
+                        ? null
+                        : size;
+
+                renderPalette();
+            }
+        );
+
+        paletteElement.appendChild(button);
+    }
+}
+
+function placeSelected(r,c) {
+
+    if (gameOver) {
+        return;
+    }
+
+    if (currentPlayer() !== "H") {
+        return;
+    }
+
+    if (selectedSize === null) {
+        statusElement.textContent =
+            "まずS・M・Lの駒を選んでください";
+        return;
+    }
+
+    const color = currentColor();
+
+    if (
+        !canPlace(
+            r,
+            c,
+            color,
+            selectedSize
+        )
+    ) {
+
+        statusElement.textContent =
+            "そこには置けません";
+        return;
+    }
+
+    doMove(
+        r,
+        c,
+        color,
+        selectedSize
+    );
+
+    selectedSize = null;
+    moveCount++;
+
+    const win = winner();
+
+    if (win) {
+
+        gameOver = true;
+        render();
+
+        statusElement.textContent =
+            `${COLOR_NAMES[win.color]}のOtrio！`;
+
+        setTimeout(
+            () => alert(
+                `Otrio！\n${COLOR_NAMES[win.color]}の勝ちです！`
+            ),
+            50
+        );
+
+        return;
+    }
+
+    statusElement.textContent =
+        "AIが考えています…";
+
+    render();
+
+    setTimeout(
+        aiTurn,
+        100
+    );
+}
+
+function aiTurn() {
+
+    if (gameOver) {
+        return;
+    }
+
+    if (currentPlayer() !== "A") {
+        return;
+    }
+
+    const move =
+        aiChooseMove();
+
+    if (!move) {
+
+        moveCount++;
+
+        if (
+            legalMoves("H").length === 0
+        ) {
+
+            gameOver = true;
+
+            statusElement.textContent =
+                "引き分けです";
+
+            return;
+        }
+
+        statusElement.textContent =
+            "AIはパスしました。あなたの番です";
+
+        render();
+
+        return;
+    }
+
+    doMove(
+        move.r,
+        move.c,
+        move.color,
+        move.size
+    );
+
+    moveCount++;
+
+    const win = winner();
+
+    if (win) {
+
+        gameOver = true;
+
+        render();
+
+        statusElement.textContent =
+            `${COLOR_NAMES[win.color]}のOtrio！`;
+
+        setTimeout(
+            () => alert(
+                `Otrio！\nAIの勝ちです！`
+            ),
+            50
+        );
+
+        return;
+    }
+
+    const nextColor =
+        currentColor();
+
+    statusElement.textContent =
+        `あなたの番：${COLOR_NAMES[nextColor]}の駒`;
+
+    render();
+}
+
+
+// ============================================================
+// ボタン
+// ============================================================
+
+document
+    .getElementById("new-game")
+    .addEventListener(
+        "click",
+        newGame
+    );
+
+strengthElement.addEventListener(
+    "change",
+    () => {
+
+        statusElement.textContent =
+            `AIの強さを「${
+                strengthElement.options[
+                    strengthElement.selectedIndex
+                ].text
+            }」にしました`;
+    }
+);
+
+
+// ============================================================
+// 起動
+// ============================================================
+
+newGame();
+
+</script>
+
+</body>
+</html>
+```
