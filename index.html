@@ -102,10 +102,34 @@ h1 {
 .piece {
     position: absolute;
     border-radius: 50%;
-    border: 6px solid;
+    border: 6px solid #222;
 
     pointer-events: none;
 }
+
+/*
+   最新の1手だけ本来の色にする
+*/
+
+.piece.latest.red {
+    border-color: #e53935;
+}
+
+.piece.latest.purple {
+    border-color: #8e44ad;
+}
+
+.piece.latest.blue {
+    border-color: #1e88e5;
+}
+
+.piece.latest.green {
+    border-color: #43a047;
+}
+
+/*
+   サイズ
+*/
 
 .piece.S {
     width: 31%;
@@ -120,22 +144,6 @@ h1 {
 .piece.L {
     width: 80%;
     height: 80%;
-}
-
-.red {
-    border-color: #e53935;
-}
-
-.purple {
-    border-color: #8e44ad;
-}
-
-.blue {
-    border-color: #1e88e5;
-}
-
-.green {
-    border-color: #43a047;
 }
 
 /* =========================
@@ -184,11 +192,17 @@ h1 {
     opacity: 0.25;
 }
 
+/*
+   選択中は現在の色で強調
+*/
+
 .piece-button.selected {
-    outline: 4px solid #333;
+    outline: 4px solid var(--current-color);
+    outline-offset: 1px;
 }
 
 /* 手元の駒の円 */
+
 .piece-button .ring {
     border-radius: 50%;
     border: 7px solid;
@@ -209,6 +223,22 @@ h1 {
 .piece-button.L .ring {
     width: 72px;
     height: 72px;
+}
+
+.ring.red {
+    border-color: #e53935;
+}
+
+.ring.purple {
+    border-color: #8e44ad;
+}
+
+.ring.blue {
+    border-color: #1e88e5;
+}
+
+.ring.green {
+    border-color: #43a047;
 }
 
 /* =========================
@@ -331,7 +361,6 @@ AIの強さ
 
 </div>
 
-
 <script>
 
 /* =========================================================
@@ -392,6 +421,18 @@ let moveCount;
 let selectedSize = null;
 
 let gameOver = false;
+
+/*
+   最新の1手
+   例：
+   {
+       r: 1,
+       c: 1,
+       color: "red",
+       size: "M"
+   }
+*/
+let lastMove = null;
 
 
 /* =========================================================
@@ -455,6 +496,11 @@ function newGame() {
     selectedSize = null;
 
     gameOver = false;
+
+    lastMove = null;
+
+    statusElement.textContent =
+        "あなたの番です。";
 
     updateTurnDisplay();
 
@@ -1570,9 +1616,28 @@ function render() {
                     );
 
 
-                element.className =
+                /*
+                 * 基本は黒。
+                 * 最新の手と一致する駒だけ
+                 * 本来の色にする。
+                 */
 
+                element.className =
                     `piece ${piece.size} ${piece.color}`;
+
+
+                if (
+                    lastMove &&
+                    lastMove.r === r &&
+                    lastMove.c === c &&
+                    lastMove.color === piece.color &&
+                    lastMove.size === piece.size
+                ) {
+
+                    element.classList.add(
+                        "latest"
+                    );
+                }
 
 
                 cell.appendChild(
@@ -1633,6 +1698,19 @@ function renderPalette() {
         currentColor();
 
 
+    /*
+     * 現在の色をCSS変数として設定。
+     * 選択枠も赤・紫に変わる。
+     */
+
+    paletteElement.style.setProperty(
+        "--current-color",
+        color === "red"
+            ? "#e53935"
+            : "#8e44ad"
+    );
+
+
     for (
         const size
         of SIZES
@@ -1674,6 +1752,11 @@ function renderPalette() {
                 "div"
             );
 
+
+        /*
+         * 現在の手番の色をそのまま使用。
+         * 赤の番なら赤、紫の番なら紫。
+         */
 
         ring.className =
             `ring ${color}`;
@@ -1809,6 +1892,22 @@ function placeSelected(r,c) {
     );
 
 
+    /*
+     * 今置いた駒を「最新の手」として記録
+     */
+
+    lastMove = {
+
+        r: r,
+
+        c: c,
+
+        color: color,
+
+        size: selectedSize
+    };
+
+
     selectedSize = null;
 
     moveCount++;
@@ -1904,10 +2003,6 @@ function aiTurn() {
 
             /*
              * 現在のAI色に合法手がない場合
-             *
-             * 「この色はパス」
-             *
-             * として次の色へ進む。
              */
 
             if (
@@ -1917,21 +2012,11 @@ function aiTurn() {
                 moveCount++;
 
 
-                /*
-                 * 次の自分側の色に
-                 * 置ける駒があるか確認
-                 */
-
                 if (
                     legalMoves(
                         "H"
                     ).length === 0
                 ) {
-
-                    /*
-                     * 人間も置けなければ、
-                     * AIの次の色も確認。
-                     */
 
                     if (
                         legalMoves(
@@ -1974,6 +2059,23 @@ function aiTurn() {
                 move.color,
                 move.size
             );
+
+
+            /*
+             * AIが今置いた駒を
+             * 最新の手として記録
+             */
+
+            lastMove = {
+
+                r: move.r,
+
+                c: move.c,
+
+                color: move.color,
+
+                size: move.size
+            };
 
 
             moveCount++;
@@ -2026,20 +2128,12 @@ function aiTurn() {
                 humanMoves.length === 0
             ) {
 
-                /*
-                 * 人間側の現在色をパス
-                 */
-
                 const skippedColor =
                     currentColor();
 
 
                 moveCount++;
 
-
-                /*
-                 * AI側も置けるか確認
-                 */
 
                 if (
                     legalMoves(
@@ -2113,6 +2207,12 @@ document
 ========================================================= */
 
 newGame();
+
+</script>
+
+</body>
+</html>
+```
 
 </script>
 
