@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 
 <head>
@@ -6,27 +7,30 @@
 <meta charset="UTF-8">
 
 <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+
 >
 
 <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
+name="apple-mobile-web-app-capable"
+content="yes"
+
 >
 
 <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="default"
+name="apple-mobile-web-app-status-bar-style"
+content="default"
+
 >
 
 <meta
-    name="apple-mobile-web-app-title"
-    content="オートリオ"
+name="apple-mobile-web-app-title"
+content="オートリオ"
+
 >
 
 <title>オートリオ AI練習</title>
-
 
 <style>
 
@@ -103,9 +107,14 @@ h1 {
 }
 
 
-/* ---------------------------------
+/* =========================
    上部の色表示
---------------------------------- */
+========================= */
+
+/*
+   通常は全部黒。
+   JavaScriptから色を直接指定する。
+*/
 
 .color-label {
 
@@ -114,30 +123,64 @@ h1 {
 }
 
 
-/* 現在打つ色だけ本来の色 */
+/* =========================
+   現在の駒の色
+========================= */
 
-.color-label.active.red {
+.red {
+
+    border-color: #e53935;
+
+}
+
+
+.purple {
+
+    border-color: #8e44ad;
+
+}
+
+
+.blue {
+
+    border-color: #1e88e5;
+
+}
+
+
+.green {
+
+    border-color: #43a047;
+
+}
+
+
+/*
+   上部表示用の文字色
+*/
+
+.order-red {
 
     color: #e53935;
 
 }
 
 
-.color-label.active.purple {
+.order-purple {
 
     color: #8e44ad;
 
 }
 
 
-.color-label.active.blue {
+.order-blue {
 
     color: #1e88e5;
 
 }
 
 
-.color-label.active.green {
+.order-green {
 
     color: #43a047;
 
@@ -239,30 +282,6 @@ h1 {
     width: 80%;
 
     height: 80%;
-}
-
-
-.red {
-
-    border-color: #e53935;
-}
-
-
-.purple {
-
-    border-color: #8e44ad;
-}
-
-
-.blue {
-
-    border-color: #1e88e5;
-}
-
-
-.green {
-
-    border-color: #43a047;
 }
 
 
@@ -474,38 +493,23 @@ select {
 
 </head>
 
-
 <body>
-
 
 <div id="app">
 
-
 <h1>オートリオ AI練習</h1>
-
 
 <div id="turn-info"></div>
 
-
-<!--
-    ここはJavaScriptで毎回作り直す
-    現在打つ色だけ色を付ける
--->
-
 <div id="order-info"></div>
-
 
 <div id="status"></div>
 
-
 <div id="board"></div>
-
 
 <div id="palette-title"></div>
 
-
 <div id="palette"></div>
-
 
 <div id="ai-info">
 
@@ -513,9 +517,7 @@ AI：青・緑
 
 </div>
 
-
 <div id="controls">
-
 
 <label>
 
@@ -539,19 +541,15 @@ AIの強さ
 
 </label>
 
-
 <button id="new-game">
 
 新しいゲーム
 
 </button>
 
-
 </div>
 
-
 </div>
-
 
 <script>
 
@@ -588,11 +586,8 @@ const AI_COLORS = [
 const COLOR_NAMES = {
 
     red: "赤",
-
     purple: "紫",
-
     blue: "青",
-
     green: "緑"
 
 };
@@ -633,6 +628,10 @@ let remaining;
 
 let moveCount;
 
+let humanMoveCount;
+
+let aiMoveCount;
+
 let selectedSize = null;
 
 let gameOver = false;
@@ -671,151 +670,231 @@ const strengthElement =
 
 
 /* =========================================================
-   ★ 上部の色表示
+   ★★★ 上部の色表示 ★★★
+
+   ここが今回の重要部分です。
+
+   0回
+   → 全部黒
+
+   1回
+   → 1番目だけ色付き
+
+   2回
+   → 2番目だけ色付き
+
+   3回
+   → 3番目だけ色付き
+
+   4回
+   → 4番目だけ色付き
+
+   5回
+   → 1番目だけ色付き
+
+   6回
+   → 2番目だけ色付き
+
+   というように繰り返します。
 ========================================================= */
 
 function updateOrderDisplay() {
 
-    /*
-     * 今現在、打つ色
-     */
-
-    const activeColor =
-        currentColor();
-
 
     /*
-     * あなた：赤 → 紫 → 赤 → 紫
+     * あなたの表示
+     *
+     * 赤 → 紫 → 赤 → 紫
      */
+
+    const humanColors = [
+
+        "red",
+        "purple",
+        "red",
+        "purple"
+
+    ];
+
+
+    /*
+     * AIの表示
+     *
+     * 青 → 緑 → 青 → 緑
+     */
+
+    const aiColors = [
+
+        "blue",
+        "green",
+        "blue",
+        "green"
+
+    ];
+
+
+    /*
+     * ==========================================
+     * あなた側
+     * ==========================================
+     *
+     * 0回なら「色を付ける場所なし」
+     *
+     * 1回なら0番目
+     * 2回なら1番目
+     * 3回なら2番目
+     * 4回なら3番目
+     * 5回なら0番目
+     *
+     * つまり
+     *
+     * (回数 - 1) % 4
+     *
+     */
+
+    let humanActiveIndex = -1;
+
+
+    if (humanMoveCount > 0) {
+
+        humanActiveIndex =
+            (humanMoveCount - 1) % 4;
+
+    }
+
 
     let humanHTML = "";
 
+
     for (
         let i = 0;
-        i < HUMAN_COLORS.length;
+        i < humanColors.length;
         i++
     ) {
 
         const color =
-            HUMAN_COLORS[i];
-
-
-        const active =
-            color === activeColor
-            ? "active"
-            : "";
-
-
-        humanHTML +=
-
-            `<span class="color-label ${color} ${active}">` +
-
-            `${COLOR_NAMES[color]}` +
-
-            `</span>`;
+            humanColors[i];
 
 
         /*
-         * 赤 → 紫 → 赤
+         * 今回色を付ける場所だけ
+         * 本来の色にする
+         *
+         * それ以外は黒
          */
 
-        if (i < 1) {
+        if (
+            i === humanActiveIndex
+        ) {
 
-            humanHTML += " → ";
+            humanHTML +=
+
+                `<span class="color-label order-${color}">` +
+
+                COLOR_NAMES[color] +
+
+                `</span>`;
 
         } else {
 
-            humanHTML += " → ";
-
-            /*
-             * 3つ目の赤
-             */
-
             humanHTML +=
 
-                `<span class="color-label ${HUMAN_COLORS[0]} ${
-                    HUMAN_COLORS[0] === activeColor
-                    ? "active"
-                    : ""
-                }">${
-                    COLOR_NAMES[HUMAN_COLORS[0]]
-                }</span>`;
+                `<span class="color-label">` +
 
-            humanHTML += " → ";
+                COLOR_NAMES[color] +
 
-            /*
-             * 4つ目の紫
-             */
+                `</span>`;
 
-            humanHTML +=
-
-                `<span class="color-label ${HUMAN_COLORS[1]} ${
-                    HUMAN_COLORS[1] === activeColor
-                    ? "active"
-                    : ""
-                }">${
-                    COLOR_NAMES[HUMAN_COLORS[1]]
-                }</span>";
-
-            break;
         }
+
+
+        if (i < 3) {
+
+            humanHTML += " → ";
+
+        }
+
     }
 
 
     /*
-     * AI：青 → 緑 → 青 → 緑
+     * ==========================================
+     * AI側
+     * ==========================================
      */
+
+    let aiActiveIndex = -1;
+
+
+    if (aiMoveCount > 0) {
+
+        aiActiveIndex =
+            (aiMoveCount - 1) % 4;
+
+    }
+
 
     let aiHTML = "";
 
-    aiHTML +=
 
-        `<span class="color-label blue ${
-            activeColor === "blue"
-            ? "active"
-            : ""
-        }">青</span>`;
+    for (
+        let i = 0;
+        i < aiColors.length;
+        i++
+    ) {
 
-    aiHTML += " → ";
+        const color =
+            aiColors[i];
 
-    aiHTML +=
 
-        `<span class="color-label green ${
-            activeColor === "green"
-            ? "active"
-            : ""
-        }">緑</span>`;
+        if (
+            i === aiActiveIndex
+        ) {
 
-    aiHTML += " → ";
+            aiHTML +=
 
-    aiHTML +=
+                `<span class="color-label order-${color}">` +
 
-        `<span class="color-label blue ${
-            activeColor === "blue"
-            ? "active"
-            : ""
-        }">青</span>`;
+                COLOR_NAMES[color] +
 
-    aiHTML += " → ";
+                `</span>`;
 
-    aiHTML +=
+        } else {
 
-        `<span class="color-label green ${
-            activeColor === "green"
-            ? "active"
-            : ""
-        }">緑</span>`;
+            aiHTML +=
 
-    
+                `<span class="color-label">` +
+
+                COLOR_NAMES[color] +
+
+                `</span>`;
+
+        }
+
+
+        if (i < 3) {
+
+            aiHTML += " → ";
+
+        }
+
+    }
+
+
+    /*
+     * 画面に表示
+     */
+
     orderInfo.innerHTML =
 
         "あなた： " +
 
         humanHTML +
 
-        "　／　AI： " +
+        "　・　AI： " +
 
         aiHTML;
+
 }
 
 
@@ -825,12 +904,15 @@ function updateOrderDisplay() {
 
 function newGame() {
 
+
     board =
+
         Array.from(
 
             {length: 3},
 
             () =>
+
                 Array.from(
 
                     {length: 3},
@@ -865,9 +947,23 @@ function newGame() {
 
     moveCount = 0;
 
+
+    /*
+     * ★あなたとAIの手数を独立管理
+     */
+
+    humanMoveCount = 0;
+
+    aiMoveCount = 0;
+
+
     selectedSize = null;
 
     gameOver = false;
+
+
+    statusElement.textContent =
+        "ゲーム開始";
 
 
     updateTurnDisplay();
@@ -947,6 +1043,7 @@ function canPlace(
     color,
     size
 ) {
+
 
     if (
         remaining[color][size] <= 0
@@ -1040,6 +1137,7 @@ function hasPiece(
 
             (
                 size === undefined ||
+
                 piece.size === size
             )
 
@@ -1281,6 +1379,7 @@ function legalMoves(
     player,
     ply = moveCount
 ) {
+
 
     const colors =
 
@@ -1642,6 +1741,7 @@ function minimax(
     maximizing,
     ply
 ) {
+
 
     const win = winner();
 
@@ -2035,6 +2135,7 @@ function shuffle(array) {
 
 function updateTurnDisplay() {
 
+
     if (
         gameOver
     ) {
@@ -2077,6 +2178,7 @@ function updateTurnDisplay() {
 
     } else {
 
+
         turnInfo.textContent =
 
             `AIの番：${COLOR_NAMES[color]}`;
@@ -2099,10 +2201,7 @@ function updateTurnDisplay() {
 
 
     /*
-     * ★ここが重要
-     *
-     * 現在の色が変わるたびに
-     * 上部の表示も更新する
+     * ★上部表示を更新
      */
 
     updateOrderDisplay();
@@ -2411,6 +2510,7 @@ function renderPalette() {
 
 function placeSelected(r,c) {
 
+
     if (
         gameOver
     ) {
@@ -2477,6 +2577,13 @@ function placeSelected(r,c) {
 
 
     selectedSize = null;
+
+
+    /*
+     * ★あなたの手数を1増やす
+     */
+
+    humanMoveCount++;
 
 
     moveCount++;
@@ -2557,6 +2664,7 @@ function placeSelected(r,c) {
 
 function aiTurn() {
 
+
     if (
         gameOver
     ) {
@@ -2590,6 +2698,7 @@ function aiTurn() {
     setTimeout(
 
         () => {
+
 
             const move =
                 aiChooseMove();
@@ -2670,6 +2779,13 @@ function aiTurn() {
                 move.size
 
             );
+
+
+            /*
+             * ★AIの手数を1増やす
+             */
+
+            aiMoveCount++;
 
 
             moveCount++;
@@ -2841,7 +2957,7 @@ newGame();
 
 </script>
 
-
 </body>
 
 </html>
+
