@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
 
-<meta name="apple-mobile-web-app-capable"
-content="yes">
+<meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+>
 
-<meta name="apple-mobile-web-app-status-bar-style"
-content="default">
+<meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+>
 
-<meta name="apple-mobile-web-app-title"
-content="オートリオ">
+<meta
+    name="apple-mobile-web-app-title"
+    content="オートリオ"
+>
 
 <title>オートリオ AI練習</title>
 
@@ -90,7 +99,48 @@ h1 {
 
     margin-bottom: 4px;
 
-    line-height: 1.7;
+    font-weight: bold;
+}
+
+
+/* ---------------------------------
+   上部の色表示
+--------------------------------- */
+
+.color-label {
+
+    color: #222;
+
+}
+
+
+/* 現在打つ色だけ本来の色 */
+
+.color-label.active.red {
+
+    color: #e53935;
+
+}
+
+
+.color-label.active.purple {
+
+    color: #8e44ad;
+
+}
+
+
+.color-label.active.blue {
+
+    color: #1e88e5;
+
+}
+
+
+.color-label.active.green {
+
+    color: #43a047;
+
 }
 
 
@@ -109,48 +159,6 @@ h1 {
 
 
 /* =========================
-   直前に打った色
-========================= */
-
-.order-red {
-
-    color: #e53935;
-
-    font-weight: bold;
-}
-
-
-.order-purple {
-
-    color: #8e44ad;
-
-    font-weight: bold;
-}
-
-
-.order-blue {
-
-    color: #1e88e5;
-
-    font-weight: bold;
-}
-
-
-.order-green {
-
-    color: #43a047;
-
-    font-weight: bold;
-}
-
-
-.order-black {
-
-    color: #222;
-}
-
-
-/* =========================
    盤
 ========================= */
 
@@ -158,8 +166,7 @@ h1 {
 
     display: grid;
 
-    grid-template-columns:
-        repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 
     width: min(94vw, 510px);
 
@@ -234,10 +241,6 @@ h1 {
     height: 80%;
 }
 
-
-/* =========================
-   駒の色
-========================= */
 
 .red {
 
@@ -333,9 +336,7 @@ h1 {
 }
 
 
-/* =========================
-   手元の駒の円
-========================= */
+/* 手元の駒 */
 
 .piece-button .ring {
 
@@ -480,19 +481,15 @@ select {
 <div id="app">
 
 
-<h1>
-オートリオ AI練習
-</h1>
+<h1>オートリオ AI練習</h1>
 
 
 <div id="turn-info"></div>
 
 
 <!--
-    ここはJavaScriptで自動表示します。
-
-    直前に置いた色だけが
-    本来の色になります。
+    ここはJavaScriptで毎回作り直す
+    現在打つ色だけ色を付ける
 -->
 
 <div id="order-info"></div>
@@ -511,7 +508,9 @@ select {
 
 
 <div id="ai-info">
+
 AI：青・緑
+
 </div>
 
 
@@ -542,7 +541,9 @@ AIの強さ
 
 
 <button id="new-game">
+
 新しいゲーム
+
 </button>
 
 
@@ -642,52 +643,180 @@ let gameOver = false;
 ========================================================= */
 
 const boardElement =
-
-    document.getElementById(
-        "board"
-    );
+    document.getElementById("board");
 
 
 const paletteElement =
-
-    document.getElementById(
-        "palette"
-    );
+    document.getElementById("palette");
 
 
 const paletteTitle =
-
-    document.getElementById(
-        "palette-title"
-    );
+    document.getElementById("palette-title");
 
 
 const statusElement =
-
-    document.getElementById(
-        "status"
-    );
+    document.getElementById("status");
 
 
 const turnInfo =
-
-    document.getElementById(
-        "turn-info"
-    );
-
-
-const strengthElement =
-
-    document.getElementById(
-        "strength"
-    );
+    document.getElementById("turn-info");
 
 
 const orderInfo =
+    document.getElementById("order-info");
 
-    document.getElementById(
-        "order-info"
-    );
+
+const strengthElement =
+    document.getElementById("strength");
+
+
+/* =========================================================
+   ★ 上部の色表示
+========================================================= */
+
+function updateOrderDisplay() {
+
+    /*
+     * 今現在、打つ色
+     */
+
+    const activeColor =
+        currentColor();
+
+
+    /*
+     * あなた：赤 → 紫 → 赤 → 紫
+     */
+
+    let humanHTML = "";
+
+    for (
+        let i = 0;
+        i < HUMAN_COLORS.length;
+        i++
+    ) {
+
+        const color =
+            HUMAN_COLORS[i];
+
+
+        const active =
+            color === activeColor
+            ? "active"
+            : "";
+
+
+        humanHTML +=
+
+            `<span class="color-label ${color} ${active}">` +
+
+            `${COLOR_NAMES[color]}` +
+
+            `</span>`;
+
+
+        /*
+         * 赤 → 紫 → 赤
+         */
+
+        if (i < 1) {
+
+            humanHTML += " → ";
+
+        } else {
+
+            humanHTML += " → ";
+
+            /*
+             * 3つ目の赤
+             */
+
+            humanHTML +=
+
+                `<span class="color-label ${HUMAN_COLORS[0]} ${
+                    HUMAN_COLORS[0] === activeColor
+                    ? "active"
+                    : ""
+                }">${
+                    COLOR_NAMES[HUMAN_COLORS[0]]
+                }</span>`;
+
+            humanHTML += " → ";
+
+            /*
+             * 4つ目の紫
+             */
+
+            humanHTML +=
+
+                `<span class="color-label ${HUMAN_COLORS[1]} ${
+                    HUMAN_COLORS[1] === activeColor
+                    ? "active"
+                    : ""
+                }">${
+                    COLOR_NAMES[HUMAN_COLORS[1]]
+                }</span>";
+
+            break;
+        }
+    }
+
+
+    /*
+     * AI：青 → 緑 → 青 → 緑
+     */
+
+    let aiHTML = "";
+
+    aiHTML +=
+
+        `<span class="color-label blue ${
+            activeColor === "blue"
+            ? "active"
+            : ""
+        }">青</span>`;
+
+    aiHTML += " → ";
+
+    aiHTML +=
+
+        `<span class="color-label green ${
+            activeColor === "green"
+            ? "active"
+            : ""
+        }">緑</span>`;
+
+    aiHTML += " → ";
+
+    aiHTML +=
+
+        `<span class="color-label blue ${
+            activeColor === "blue"
+            ? "active"
+            : ""
+        }">青</span>`;
+
+    aiHTML += " → ";
+
+    aiHTML +=
+
+        `<span class="color-label green ${
+            activeColor === "green"
+            ? "active"
+            : ""
+        }">緑</span>`;
+
+    
+    orderInfo.innerHTML =
+
+        "あなた： " +
+
+        humanHTML +
+
+        "　／　AI： " +
+
+        aiHTML;
+}
 
 
 /* =========================================================
@@ -697,13 +826,11 @@ const orderInfo =
 function newGame() {
 
     board =
-
         Array.from(
 
             {length: 3},
 
             () =>
-
                 Array.from(
 
                     {length: 3},
@@ -719,16 +846,8 @@ function newGame() {
 
 
     for (
-
         const color
-
-        of [
-
-            ...HUMAN_COLORS,
-            ...AI_COLORS
-
-        ]
-
+        of [...HUMAN_COLORS, ...AI_COLORS]
     ) {
 
         remaining[color] = {
@@ -751,11 +870,9 @@ function newGame() {
     gameOver = false;
 
 
-    statusElement.textContent =
-        "あなたの番です。";
-
-
     updateTurnDisplay();
+
+    updateOrderDisplay();
 
     render();
 
@@ -791,17 +908,16 @@ function currentColor() {
 
 
     if (
-
         currentPlayer() === "H"
-
     ) {
 
         return HUMAN_COLORS[index];
 
+    } else {
+
+        return AI_COLORS[index];
+
     }
-
-
-    return AI_COLORS[index];
 
 }
 
@@ -826,18 +942,14 @@ function playerOfColor(color) {
 ========================================================= */
 
 function canPlace(
-
     r,
     c,
     color,
     size
-
 ) {
 
     if (
-
         remaining[color][size] <= 0
-
     ) {
 
         return false;
@@ -846,17 +958,12 @@ function canPlace(
 
 
     for (
-
         const piece
-
         of board[r][c]
-
     ) {
 
         if (
-
             piece.size === size
-
         ) {
 
             return false;
@@ -876,12 +983,10 @@ function canPlace(
 ========================================================= */
 
 function doMove(
-
     r,
     c,
     color,
     size
-
 ) {
 
     board[r][c].push({
@@ -903,12 +1008,10 @@ function doMove(
 ========================================================= */
 
 function undoMove(
-
     r,
     c,
     color,
     size
-
 ) {
 
     board[r][c].pop();
@@ -923,12 +1026,10 @@ function undoMove(
 ========================================================= */
 
 function hasPiece(
-
     r,
     c,
     color,
     size
-
 ) {
 
     return board[r][c].some(
@@ -938,11 +1039,8 @@ function hasPiece(
             piece.color === color &&
 
             (
-
                 size === undefined ||
-
                 piece.size === size
-
             )
 
     );
@@ -957,28 +1055,20 @@ function hasPiece(
 function hasOtrio(color) {
 
 
-    /* --------------------------------
-       同じマスにS/M/L
-    -------------------------------- */
+    /*
+     * 同じマスにS/M/L
+     */
 
     for (
-
         let r = 0;
-
         r < 3;
-
         r++
-
     ) {
 
         for (
-
             let c = 0;
-
             c < 3;
-
             c++
-
         ) {
 
             const sizes =
@@ -986,17 +1076,12 @@ function hasOtrio(color) {
 
 
             for (
-
                 const piece
-
                 of board[r][c]
-
             ) {
 
                 if (
-
                     piece.color === color
-
                 ) {
 
                     sizes.add(
@@ -1027,27 +1112,23 @@ function hasOtrio(color) {
     }
 
 
-    /* --------------------------------
-       3マスのライン
-    -------------------------------- */
+    /*
+     * 3マスのライン
+     */
 
     for (
-
         const line
-
         of LINES
-
     ) {
 
 
-        /* 同じサイズ3個 */
+        /*
+         * 同じサイズ3個
+         */
 
         for (
-
             const size
-
             of SIZES
-
         ) {
 
             if (
@@ -1057,12 +1138,10 @@ function hasOtrio(color) {
                     ([r,c]) =>
 
                         hasPiece(
-
                             r,
                             c,
                             color,
                             size
-
                         )
 
                 )
@@ -1076,39 +1155,35 @@ function hasOtrio(color) {
         }
 
 
-        /* S-M-L */
+        /*
+         * S-M-L
+         */
 
         if (
 
             hasPiece(
-
                 line[0][0],
                 line[0][1],
                 color,
                 "S"
-
             )
 
             &&
 
             hasPiece(
-
                 line[1][0],
                 line[1][1],
                 color,
                 "M"
-
             )
 
             &&
 
             hasPiece(
-
                 line[2][0],
                 line[2][1],
                 color,
                 "L"
-
             )
 
         ) {
@@ -1118,39 +1193,35 @@ function hasOtrio(color) {
         }
 
 
-        /* L-M-S */
+        /*
+         * L-M-S
+         */
 
         if (
 
             hasPiece(
-
                 line[0][0],
                 line[0][1],
                 color,
                 "L"
-
             )
 
             &&
 
             hasPiece(
-
                 line[1][0],
                 line[1][1],
                 color,
                 "M"
-
             )
 
             &&
 
             hasPiece(
-
                 line[2][0],
                 line[2][1],
                 color,
                 "S"
-
             )
 
         ) {
@@ -1174,22 +1245,12 @@ function hasOtrio(color) {
 function winner() {
 
     for (
-
         const color
-
-        of [
-
-            ...HUMAN_COLORS,
-            ...AI_COLORS
-
-        ]
-
+        of [...HUMAN_COLORS, ...AI_COLORS]
     ) {
 
         if (
-
             hasOtrio(color)
-
         ) {
 
             return {
@@ -1217,11 +1278,8 @@ function winner() {
 ========================================================= */
 
 function legalMoves(
-
     player,
-
     ply = moveCount
-
 ) {
 
     const colors =
@@ -1248,42 +1306,29 @@ function legalMoves(
 
 
     for (
-
         let r = 0;
-
         r < 3;
-
         r++
-
     ) {
 
         for (
-
             let c = 0;
-
             c < 3;
-
             c++
-
         ) {
 
             for (
-
                 const size
-
                 of SIZES
-
             ) {
 
                 if (
 
                     canPlace(
-
                         r,
                         c,
                         color,
                         size
-
                     )
 
                 ) {
@@ -1353,11 +1398,8 @@ function evaluate() {
 
 
     for (
-
         const key
-
         in positions
-
     ) {
 
         const [r,c] =
@@ -1368,11 +1410,8 @@ function evaluate() {
 
 
         for (
-
             const piece
-
             of board[r][c]
-
         ) {
 
             const value =
@@ -1395,16 +1434,8 @@ function evaluate() {
 
 
     for (
-
         const color
-
-        of [
-
-            ...HUMAN_COLORS,
-            ...AI_COLORS
-
-        ]
-
+        of [...HUMAN_COLORS, ...AI_COLORS]
     ) {
 
         const sign =
@@ -1417,19 +1448,13 @@ function evaluate() {
 
 
         for (
-
             const line
-
             of LINES
-
         ) {
 
             for (
-
                 const size
-
                 of SIZES
-
             ) {
 
                 const count =
@@ -1439,21 +1464,17 @@ function evaluate() {
                         ([r,c]) =>
 
                             hasPiece(
-
                                 r,
                                 c,
                                 color,
                                 size
-
                             )
 
                     ).length;
 
 
                 if (
-
                     count === 2
-
                 ) {
 
                     score +=
@@ -1463,9 +1484,7 @@ function evaluate() {
 
 
                 if (
-
                     count === 1
-
                 ) {
 
                     score +=
@@ -1477,30 +1496,20 @@ function evaluate() {
 
 
             for (
-
                 const order
-
                 of [
-
                     ["S","M","L"],
-
                     ["L","M","S"]
-
                 ]
-
             ) {
 
                 let count = 0;
 
 
                 for (
-
                     let i = 0;
-
                     i < 3;
-
                     i++
-
                 ) {
 
                     const [r,c] =
@@ -1510,12 +1519,10 @@ function evaluate() {
                     if (
 
                         hasPiece(
-
                             r,
                             c,
                             color,
                             order[i]
-
                         )
 
                     ) {
@@ -1528,9 +1535,7 @@ function evaluate() {
 
 
                 if (
-
                     count === 2
-
                 ) {
 
                     score +=
@@ -1540,9 +1545,7 @@ function evaluate() {
 
 
                 if (
-
                     count === 1
-
                 ) {
 
                     score +=
@@ -1555,48 +1558,37 @@ function evaluate() {
         }
 
 
-        /* 同じマスに2サイズ */
+        /*
+         * 同じマスに2サイズ
+         */
 
         for (
-
             let r = 0;
-
             r < 3;
-
             r++
-
         ) {
 
             for (
-
                 let c = 0;
-
                 c < 3;
-
                 c++
-
             ) {
 
                 let count = 0;
 
 
                 for (
-
                     const size
-
                     of SIZES
-
                 ) {
 
                     if (
 
                         hasPiece(
-
                             r,
                             c,
                             color,
                             size
-
                         )
 
                     ) {
@@ -1609,9 +1601,7 @@ function evaluate() {
 
 
                 if (
-
                     count === 2
-
                 ) {
 
                     score +=
@@ -1621,9 +1611,7 @@ function evaluate() {
 
 
                 if (
-
                     count === 1
-
                 ) {
 
                     score +=
@@ -1648,13 +1636,11 @@ function evaluate() {
 ========================================================= */
 
 function minimax(
-
     depth,
     alpha,
     beta,
     maximizing,
     ply
-
 ) {
 
     const win = winner();
@@ -1672,9 +1658,7 @@ function minimax(
 
 
     if (
-
         depth <= 0
-
     ) {
 
         return evaluate();
@@ -1694,17 +1678,13 @@ function minimax(
     const moves =
 
         legalMoves(
-
             player,
             ply
-
         );
 
 
     if (
-
         moves.length === 0
-
     ) {
 
         return evaluate();
@@ -1722,20 +1702,15 @@ function minimax(
 
 
         for (
-
             const move
-
             of moves
-
         ) {
 
             doMove(
-
                 move.r,
                 move.c,
                 move.color,
                 move.size
-
             );
 
 
@@ -1748,6 +1723,7 @@ function minimax(
                     depth - 1,
 
                     alpha,
+
                     beta,
 
                     false,
@@ -1760,29 +1736,23 @@ function minimax(
 
 
             undoMove(
-
                 move.r,
                 move.c,
                 move.color,
                 move.size
-
             );
 
 
             alpha =
 
                 Math.max(
-
                     alpha,
                     value
-
                 );
 
 
             if (
-
                 beta <= alpha
-
             ) {
 
                 break;
@@ -1794,30 +1764,23 @@ function minimax(
 
         return value;
 
-    }
 
-
-    else {
+    } else {
 
         let value =
             Infinity;
 
 
         for (
-
             const move
-
             of moves
-
         ) {
 
             doMove(
-
                 move.r,
                 move.c,
                 move.color,
                 move.size
-
             );
 
 
@@ -1830,6 +1793,7 @@ function minimax(
                     depth - 1,
 
                     alpha,
+
                     beta,
 
                     true,
@@ -1842,29 +1806,23 @@ function minimax(
 
 
             undoMove(
-
                 move.r,
                 move.c,
                 move.color,
                 move.size
-
             );
 
 
             beta =
 
                 Math.min(
-
                     beta,
                     value
-
                 );
 
 
             if (
-
                 beta <= alpha
-
             ) {
 
                 break;
@@ -1892,9 +1850,7 @@ function aiChooseMove() {
 
 
     if (
-
         moves.length === 0
-
     ) {
 
         return null;
@@ -1902,23 +1858,20 @@ function aiChooseMove() {
     }
 
 
-    /* 即勝ち */
+    /*
+     * 即勝ち
+     */
 
     for (
-
         const move
-
         of moves
-
     ) {
 
         doMove(
-
             move.r,
             move.c,
             move.color,
             move.size
-
         );
 
 
@@ -1929,16 +1882,16 @@ function aiChooseMove() {
 
 
         undoMove(
-
             move.r,
             move.c,
             move.color,
             move.size
-
         );
 
 
-        if (won) {
+        if (
+            won
+        ) {
 
             return move;
 
@@ -1948,7 +1901,6 @@ function aiChooseMove() {
 
 
     const depth =
-
         Number(
             strengthElement.value
         );
@@ -1962,20 +1914,15 @@ function aiChooseMove() {
 
 
     for (
-
         const move
-
         of moves
-
     ) {
 
         doMove(
-
             move.r,
             move.c,
             move.color,
             move.size
-
         );
 
 
@@ -1986,6 +1933,7 @@ function aiChooseMove() {
                 depth - 1,
 
                 -Infinity,
+
                 Infinity,
 
                 false,
@@ -1996,19 +1944,15 @@ function aiChooseMove() {
 
 
         undoMove(
-
             move.r,
             move.c,
             move.color,
             move.size
-
         );
 
 
         if (
-
             value > bestValue
-
         ) {
 
             bestValue =
@@ -2017,12 +1961,8 @@ function aiChooseMove() {
             bestMoves =
                 [move];
 
-        }
-
-        else if (
-
+        } else if (
             value === bestValue
-
         ) {
 
             bestMoves.push(
@@ -2056,14 +1996,9 @@ function aiChooseMove() {
 function shuffle(array) {
 
     for (
-
-        let i =
-            array.length - 1;
-
+        let i = array.length - 1;
         i > 0;
-
         i--
-
     ) {
 
         const j =
@@ -2100,7 +2035,9 @@ function shuffle(array) {
 
 function updateTurnDisplay() {
 
-    if (gameOver) {
+    if (
+        gameOver
+    ) {
 
         return;
 
@@ -2116,9 +2053,7 @@ function updateTurnDisplay() {
 
 
     if (
-
         player === "H"
-
     ) {
 
         turnInfo.textContent =
@@ -2139,10 +2074,8 @@ function updateTurnDisplay() {
 
             `${COLOR_NAMES[color]}の駒を選んでください`;
 
-    }
 
-
-    else {
+    } else {
 
         turnInfo.textContent =
 
@@ -2164,158 +2097,15 @@ function updateTurnDisplay() {
 
     }
 
-}
-
-
-/* =========================================================
-   直前に打った色を表示
-========================================================= */
-
-function updateOrderInfo() {
 
     /*
-     * まだ1手も打っていない
-     * → 全部黒
+     * ★ここが重要
+     *
+     * 現在の色が変わるたびに
+     * 上部の表示も更新する
      */
 
-    if (
-
-        moveCount === 0
-
-    ) {
-
-        orderInfo.innerHTML =
-
-            `
-            <span class="order-black">
-            あなた：赤 → 紫 → 赤 → 紫
-            </span>
-            ／
-            <span class="order-black">
-            AI：青 → 緑 → 青 → 緑
-            </span>
-            `;
-
-        return;
-
-    }
-
-
-    /*
-     * 直前の手
-     */
-
-    const lastPly =
-        moveCount - 1;
-
-
-    /*
-     * 直前に打ったプレイヤー
-     */
-
-    const lastPlayer =
-
-        lastPly % 2 === 0
-
-            ? "H"
-
-            : "A";
-
-
-    /*
-     * 直前に打った色
-     */
-
-    const colors =
-
-        lastPlayer === "H"
-
-            ? HUMAN_COLORS
-
-            : AI_COLORS;
-
-
-    const index =
-
-        Math.floor(
-            lastPly / 2
-        ) % 2;
-
-
-    const lastColor =
-        colors[index];
-
-
-    /*
-     * 色付き・黒文字を
-     * 自動生成
-     */
-
-    function colorName(color) {
-
-        if (
-
-            color === lastColor
-
-        ) {
-
-            return `
-
-                <span class="order-${color}">
-
-                    ${COLOR_NAMES[color]}
-
-                </span>
-
-            `;
-
-        }
-
-
-        return `
-
-            <span class="order-black">
-
-                ${COLOR_NAMES[color]}
-
-            </span>
-
-        `;
-
-    }
-
-
-    orderInfo.innerHTML =
-
-        `
-
-        <span class="order-black">
-        あなた：
-        </span>
-
-        ${colorName("red")}
-        →
-        ${colorName("purple")}
-        →
-        ${colorName("red")}
-        →
-        ${colorName("purple")}
-
-        ／
-
-        <span class="order-black">
-        AI：
-        </span>
-
-        ${colorName("blue")}
-        →
-        ${colorName("green")}
-        →
-        ${colorName("blue")}
-        →
-        ${colorName("green")}
-
-        `;
+    updateOrderDisplay();
 
 }
 
@@ -2329,28 +2119,20 @@ function render() {
     boardElement.innerHTML = "";
 
 
-    /* --------------------------------
-       盤
-    -------------------------------- */
+    /*
+     * 盤
+     */
 
     for (
-
         let r = 0;
-
         r < 3;
-
         r++
-
     ) {
 
         for (
-
             let c = 0;
-
             c < 3;
-
             c++
-
         ) {
 
             const cell =
@@ -2377,12 +2159,9 @@ function render() {
                 "click",
 
                 () =>
-
                     placeSelected(
-
                         r,
                         c
-
                     )
 
             );
@@ -2410,11 +2189,8 @@ function render() {
 
 
             for (
-
                 const piece
-
                 of pieces
-
             ) {
 
                 const element =
@@ -2426,9 +2202,7 @@ function render() {
 
                 element.className =
 
-                    `piece
-                     ${piece.size}
-                     ${piece.color}`;
+                    `piece ${piece.size} ${piece.color}`;
 
 
                 cell.appendChild(
@@ -2449,11 +2223,7 @@ function render() {
 
     renderPalette();
 
-
     updateTurnDisplay();
-
-
-    updateOrderInfo();
 
 }
 
@@ -2486,15 +2256,8 @@ function renderPalette() {
     paletteElement.innerHTML = "";
 
 
-    /*
-     * AIの番には
-     * 人間の駒を表示しない
-     */
-
     if (
-
         currentPlayer() !== "H"
-
     ) {
 
         return;
@@ -2502,22 +2265,13 @@ function renderPalette() {
     }
 
 
-    /*
-     * 現在打つ色
-     *
-     * 赤 → 紫 → 赤 → 紫
-     */
-
     const color =
         currentColor();
 
 
     for (
-
         const size
-
         of SIZES
-
     ) {
 
         const button =
@@ -2547,9 +2301,7 @@ function renderPalette() {
 
 
         if (
-
             selectedSize === size
-
         ) {
 
             button.classList.add(
@@ -2565,15 +2317,6 @@ function renderPalette() {
                 "div"
             );
 
-
-        /*
-         * ここが重要
-         *
-         * 現在打つ色を使用
-         *
-         * 赤のターン → 赤
-         * 紫のターン → 紫
-         */
 
         ring.className =
 
@@ -2629,19 +2372,19 @@ function renderPalette() {
                         : size;
 
 
-                if (selectedSize) {
+                if (
+                    selectedSize
+                ) {
 
                     statusElement.textContent =
 
                         `${COLOR_NAMES[color]}の${size}を選択中。盤のマスをタップしてください。`;
 
-                }
-
-                else {
+                } else {
 
                     statusElement.textContent =
 
-                        "駒の選択を解除しました。";
+                        "駒の選択を解除しました.";
 
                 }
 
@@ -2668,17 +2411,8 @@ function renderPalette() {
 
 function placeSelected(r,c) {
 
-    if (gameOver) {
-
-        return;
-
-    }
-
-
     if (
-
-        currentPlayer() !== "H"
-
+        gameOver
     ) {
 
         return;
@@ -2687,14 +2421,21 @@ function placeSelected(r,c) {
 
 
     if (
+        currentPlayer() !== "H"
+    ) {
 
+        return;
+
+    }
+
+
+    if (
         selectedSize === null
-
     ) {
 
         statusElement.textContent =
 
-            "まずS・M・Lの駒を選んでください。";
+            "まずS・M・Lの駒を選んでください.";
 
         return;
 
@@ -2708,19 +2449,17 @@ function placeSelected(r,c) {
     if (
 
         !canPlace(
-
             r,
             c,
             color,
             selectedSize
-
         )
 
     ) {
 
         statusElement.textContent =
 
-            "そこには置けません。同じサイズの駒がある可能性があります。";
+            "そこには置けません。同じサイズの駒がある可能性があります.";
 
         return;
 
@@ -2743,15 +2482,17 @@ function placeSelected(r,c) {
     moveCount++;
 
 
-    /* --------------------------------
-       勝敗
-    -------------------------------- */
+    /*
+     * 勝敗
+     */
 
     const win =
         winner();
 
 
-    if (win) {
+    if (
+        win
+    ) {
 
         gameOver = true;
 
@@ -2766,18 +2507,16 @@ function placeSelected(r,c) {
 
         statusElement.textContent =
 
-            "あなたの勝ちです。";
+            "あなたの勝ちです！";
 
 
         setTimeout(
 
-            () =>
+            () => alert(
 
-                alert(
+                `Otrio！\n${COLOR_NAMES[win.color]}の勝ちです！`
 
-                    `Otrio！\n${COLOR_NAMES[win.color]}の勝ちです！`
-
-                ),
+            ),
 
             50
 
@@ -2789,9 +2528,9 @@ function placeSelected(r,c) {
     }
 
 
-    /* --------------------------------
-       AIへ
-    -------------------------------- */
+    /*
+     * AIへ
+     */
 
     statusElement.textContent =
 
@@ -2818,7 +2557,9 @@ function placeSelected(r,c) {
 
 function aiTurn() {
 
-    if (gameOver) {
+    if (
+        gameOver
+    ) {
 
         return;
 
@@ -2826,9 +2567,7 @@ function aiTurn() {
 
 
     if (
-
         currentPlayer() !== "A"
-
     ) {
 
         return;
@@ -2858,18 +2597,14 @@ function aiTurn() {
 
             /*
              * 現在のAI色に合法手がない場合
-             *
-             * パス
              */
 
-            if (!move) {
+            if (
+                !move
+            ) {
 
                 moveCount++;
 
-
-                /*
-                 * 次の人間側
-                 */
 
                 if (
 
@@ -2878,10 +2613,6 @@ function aiTurn() {
                     ).length === 0
 
                 ) {
-
-                    /*
-                     * AI側も確認
-                     */
 
                     if (
 
@@ -2896,14 +2627,14 @@ function aiTurn() {
 
                         statusElement.textContent =
 
-                            "どちらも置ける駒がないため引き分けです。";
+                            "どちらも置ける駒がないため引き分けです.";
 
 
                         render();
 
 
                         alert(
-                            "引き分けです。"
+                            "引き分けです."
                         );
 
 
@@ -2931,10 +2662,6 @@ function aiTurn() {
             }
 
 
-            /*
-             * AIが駒を置く
-             */
-
             doMove(
 
                 move.r,
@@ -2948,15 +2675,17 @@ function aiTurn() {
             moveCount++;
 
 
-            /* --------------------------------
-               AIの勝利
-            -------------------------------- */
+            /*
+             * AIの勝利
+             */
 
             const win =
                 winner();
 
 
-            if (win) {
+            if (
+                win
+            ) {
 
                 gameOver = true;
 
@@ -2971,18 +2700,16 @@ function aiTurn() {
 
                 statusElement.textContent =
 
-                    "AIの勝ちです。";
+                    "AIの勝ちです.";
 
 
                 setTimeout(
 
-                    () =>
+                    () => alert(
 
-                        alert(
+                        `Otrio！\nAIの勝ちです！`
 
-                            `Otrio！\nAIの勝ちです！`
-
-                        ),
+                    ),
 
                     50
 
@@ -2995,8 +2722,7 @@ function aiTurn() {
 
 
             /*
-             * 次の人間色に
-             * 合法手があるか
+             * 次の人間色に合法手があるか
              */
 
             const humanMoves =
@@ -3004,14 +2730,8 @@ function aiTurn() {
 
 
             if (
-
                 humanMoves.length === 0
-
             ) {
-
-                /*
-                 * 人間側の現在色をパス
-                 */
 
                 const skippedColor =
                     currentColor();
@@ -3019,10 +2739,6 @@ function aiTurn() {
 
                 moveCount++;
 
-
-                /*
-                 * AI側も置けるか確認
-                 */
 
                 if (
 
@@ -3037,14 +2753,14 @@ function aiTurn() {
 
                     statusElement.textContent =
 
-                        "どちらも置ける駒がないため引き分けです。";
+                        "どちらも置ける駒がないため引き分けです.";
 
 
                     render();
 
 
                     alert(
-                        "引き分けです。"
+                        "引き分けです."
                     );
 
 
@@ -3100,14 +2816,12 @@ function aiTurn() {
 
 
 /* =========================================================
-   新しいゲームボタン
+   新しいゲーム
 ========================================================= */
 
 document
 
-    .getElementById(
-        "new-game"
-    )
+    .getElementById("new-game")
 
     .addEventListener(
 
@@ -3129,4 +2843,5 @@ newGame();
 
 
 </body>
+
 </html>
